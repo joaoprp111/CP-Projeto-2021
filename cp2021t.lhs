@@ -1040,7 +1040,12 @@ baseExpAr' g f = baseExpAr id g id f f id f
 ---
 recExpAr f = baseExpAr' id f
 ---
-g_eval_exp = undefined
+g_eval_exp = either id (either id (either binAction unAction)) where
+  binAction (Sum, (a,b)) = a + b
+  binAction (Product, (a,b)) = a * b
+  unAction (Negate, a) = negate a 
+  unAction (E, a) = expd a
+
 ---
 clean = undefined
 ---
