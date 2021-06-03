@@ -1140,14 +1140,19 @@ avg = p1.avg_aux
 \end{code}
 
 \begin{code}
-mulAux = mul ((p1.i2),(p2.i2))
-addAux = add (mulAux,i1)
-succAux = succ.p2.i2
 
-avg_aux = cataList (either b q) where
+outList' [h] = i1 h
+outList' (h:t) = i2 (h,t)
+
+cataList' g = g . recList(cataList' g) . outList'
+
+succAux = succ . p2 . p2
+avgCalc (a,(avg,len)) = (a + (avg * len)) / (len + 1) 
+
+avg_aux = cataList' (either b q) where
   b = split id (const 1)
-  q = (div addAux succAux) >< succAux
-  -- div (add (mul (p1 . p2) (p2 . p2)) p1) (succ . p2 . p2)
+  q = split avgCalc succAux
+
 \end{code} 
 Solução para árvores de tipo \LTree:
 \begin{code}
