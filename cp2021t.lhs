@@ -1040,22 +1040,49 @@ baseExpAr' g f = baseExpAr id g id f f id f
 ---
 recExpAr f = baseExpAr' id f
 ---
-g_eval_exp = either id (either id (either binAction unAction)) where
-  binAction (Sum, (a,b)) = a + b
-  binAction (Product, (a,b)) = a * b
-  unAction (Negate, a) = negate a 
-  unAction (E, a) = expd a
+unAction (Negate, a) = negate a 
+unAction (E, a) = expd a
+
+binAction (Sum, (a,b)) = a + b
+binAction (Product, (a,b)) = a * b
+
+g_eval_exp a = either (const a) (either id (either binAction unAction)) 
 
 ---
-clean = undefined
----
-gopt = undefined 
+clean X = i1 () 
+clean (N a) = i2 (i1 a)
+clean (Bin Sum (N 0) a) = clean a
+clean (Bin Sum a (N 0)) = clean a
+clean (Bin Product (N 1) a) = clean a
+clean (Bin Product a (N 1)) = clean a
+clean (Bin Product (N 0) a) = clean (N 0)
+clean (Bin Product a (N 0)) = clean (N 0)
+clean resto = outExpAr resto
+
+--- 
+gopt a = either (const a) (either id (either binAction' unAction)) where
+  binAction' (Sum, (0,b)) = b 
+  binAction' (Sum, (a,0)) = a 
+  binAction' (Product, (1,b)) = b
+  binAction' (Product, (a,1)) = a
+  binAction' a = binAction a 
+
 \end{code}
 
 \begin{code}
+
 sd_gen :: Floating a =>
     Either () (Either a (Either (BinOp, ((ExpAr a, ExpAr a), (ExpAr a, ExpAr a))) (UnOp, (ExpAr a, ExpAr a)))) -> (ExpAr a, ExpAr a)
-sd_gen = undefined
+
+sd_gen = either derivX (either derivA (either derivBin derivUn)) where
+  derivX () = (X, N 1)
+  derivA a = (N a, N 0)
+  derivBin (Sum, ((a, a'), (b, b'))) = (Bin Sum a b, Bin Sum a' b')
+  derivBin (Product, ((a, a'), (b, b'))) = (Bin Product a b, Bin Sum (Bin Product a b') (Bin Product a' b))
+  derivUn (Negate, (a,a')) = (Un Negate a, Un Negate a')
+  derivUn (E, (a,a')) = (Un E a, Bin Product (Un E a) a')
+
+
 \end{code}
 
 \begin{code}
@@ -1065,14 +1092,21 @@ ad_gen = undefined
 \subsection*{Problema 2}
 Definir
 \begin{code}
-loop = undefined
-inic = undefined
-prj = undefined
+catt 0 = 1
+catt (n+1) = div (catt n * up n) (down(n+1))
+
+up 0 = 2
+up (n+1) = 2 + 2 + up n
+
+down 0 = 2
+down (n+1) = 1 + down n
+
+cat = prj . (for loop inic) where
+  loop (catt,up,down) = (div (catt * up) down,2+2+up,1+down)
+  inic = (1,2,2)
+  prj (catt,up,down)= catt
 \end{code}
 por forma a que
-\begin{code}
-cat = prj . (for loop inic)
-\end{code}
 seja a função pretendida.
 \textbf{NB}: usar divisão inteira.
 Apresentar de seguida a justificação da solução encontrada.
@@ -1100,7 +1134,9 @@ avg = p1.avg_aux
 \end{code}
 
 \begin{code}
-avg_aux = undefined
+avg_aux = cataList (either b q) where
+  q = undefined
+  b = undefined
 \end{code}
 Solução para árvores de tipo \LTree:
 \begin{code}
