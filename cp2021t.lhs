@@ -702,11 +702,11 @@ Verifique as suas funções testando a propriedade seguinte:
 A média de uma lista não vazia e de uma \LTree\ com os mesmos elementos coincide,
 a menos de um erro de 0.1 milésimas:
 \begin{code}
-{- prop_avg :: Ord a => [a] -> Property
+prop_avg :: [Double] -> Property
 prop_avg = nonempty .==>. diff .<=. const 0.000001 where
    diff l = avg l - (avgLTree . genLTree) l
    genLTree = anaLTree lsplit
-   nonempty = (>[]) -}
+   nonempty = (>[]) 
 \end{code}
 \end{propriedade}
 
@@ -1157,7 +1157,9 @@ avg_aux = cataList' (either b q) where
 Solução para árvores de tipo \LTree:
 \begin{code}
 avgLTree = p1.cataLTree gene where
-   gene = undefined
+   gene = (either (split (id) (const 1)) (split (auxFuncLTree) (sumSizes)))
+   auxFuncLTree ((a1,n1),(a2,n2)) = (((a1*n1) + (a2*n2)) / (n1+n2))
+   sumSizes ((a1,n1),(a2,n2)) = n1 + n2
 \end{code}
 
 \subsection*{Problema 5}
