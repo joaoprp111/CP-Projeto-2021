@@ -1120,9 +1120,12 @@ Apresentar de seguida a justificação da solução encontrada.
 \subsection*{Problema 3}
 
 \begin{code}
+h1 = const nil
+h2 ((p:ps), f) = cons (singl.(linear1d p (head ps))) (f)
+
 calcLine :: NPoint -> (NPoint -> OverTime NPoint)
 calcLine = cataList h where
-   h = undefined
+   h = either h1 h2 
 
 deCasteljau :: [NPoint] -> OverTime NPoint
 deCasteljau = hyloAlgForm alg coalg where
@@ -1166,6 +1169,69 @@ avgLTree = p1.cataLTree gene where
 Inserir em baixo o código \Fsharp\ desenvolvido, entre \verb!\begin{verbatim}! e \verb!\end{verbatim}!:
 
 \begin{verbatim}
+module BTree
+
+open Cp
+//import Data.List
+//import Data.Monoid
+
+// (1) Datatype definition -----------------------------------------------------
+
+type BTree<'a> = Empty | Node of 'a * (BTree<'a> * BTree<'a>)
+
+let inBTree x = either (konst Empty) Node x
+
+let outBTree x =
+    match x with
+    | Empty -> Left ()
+    | Node (a,(t1,t2)) -> Right (a,(t1,t2))
+
+// (2) Ana + cata + hylo --------------------------------------------------------
+
+let baseBTree f g = id -|- (f >< (g >< g))
+let recBTree g = baseBTree id g
+let rec cataBTree g = g << (recBTree (cataBtree g)) << outBTree
+let rec anaBTree g = inBTree << (recBTree (anaBTree g)) << g 
+let hyloBTree h g = cataBTree h << anaBTree g
+
+// (3) Map ---------------------------------------------------------------------
+
+let fmap f = cataBTree ( inBTree << baseBTree f id)
+
+// (4) Examples
+// (4.1) Inversion (mirror)
+
+let invBTree x = cataBTree ( inBTree << (id -|- id >< swap)) x 
+
+// (4.2) Counting
+
+let countBTree x = cataBTree (either (konst 0) (succ << (uncurry (+)) << p2)) x
+
+// (4.3) Serialization
+
+let inord x =
+    let join (a,(l,r)) = l @ [a] @ r 
+    in either nil join x 
+
+let inordt x = cataBTree inord x 
+
+let preord x =
+    let f (a,(l,r)) = a :: (l @ r) 
+    in either nil f x 
+
+let preordt x = cataBTree preord x 
+
+let postordt x = 
+    let f (a,(l,r)) = l @ r @ [a] 
+    in cataBTree (either nil f) x
+
+// (4.4) Quicksort
+
+(*let rec part p x = 
+    match x with
+    | [] -> ([],[])
+    | (h::t) -> h *)
+
 \end{verbatim}
 
 %----------------- Fim do anexo com soluções dos alunos ------------------------%
