@@ -1047,24 +1047,19 @@ a chegar à função referente ao \emph{outExpAr}.
 %
 \just\equiv{Substituição de num\_ops, Igualdade extensional (71) e Def-comp (72)}
 %
-  |lcbr(
-  outExpAr X = i1 ()
-  )(
-  outExpAr (N a) = i2 (i1 a)
-  )|
-    \\ & &
-  |lcbr(
-  outExpAr (Bin op a b)  = i2 (i2 (i1 (op,(a,b))))
-  )(
-  outExpAr (Un op a) = i2 (i2 (i2 (op,a)))
-  )|
+\begin{lcbr}
+  |outExpAr X = i1 ()| \\
+  |outExpAr (N a) = i2 (i1 a)| \\
+  |outExpAr (Bin op a b)  = i2 (i2 (i1 (op,(a,b))))| \\
+  |outExpAr (Un op a) = i2 (i2 (i2 (op,a)))| \\
+\end{lcbr}
 \end{eqnarray*}
 
-\paragraph{}Além de termos utilizado estas leis em cima para deduzir a definição do \emph{outExpAr}, também nos baseamos no tipo do \emph{out}
+\paragraph{} Além de termos utilizado estas leis em cima para deduzir a definição do \emph{outExpAr}, também nos baseamos no tipo do \emph{out}
 enquanto deduzíamos as leis, tornou-se mais intuitivo chegar à definição final, porque através dos tipos soubemos onde injetar cada parte da expressão, e 
 basicamente só tivemos de injetar no sítio correto do tipo, cada representação da expressão.
 
-Definir:
+Definição do out:
 
 \begin{code}
 outExpAr X = i1 ()
@@ -1073,22 +1068,75 @@ outExpAr (Bin op a b) = i2 (i2 (i1 (op,(a,b))))
 outExpAr (Un op a) = i2 (i2 (i2 (op,a)))
 \end{code}
 
-A seguir apresenta-se uma restrição ao functor base de |ExpAr|. 
-Ao elemento |N a| deste data type, vamos aplicar uma função \textbf{g} ao executar o processo recursivo da estrutura.
+\subsubsection*{recExpAr}
+
+\paragraph{}A seguir apresenta-se uma restrição ao functor base de |ExpAr|. 
+Ao elemento (\textit{N a}) deste data type, vamos aplicar uma função \textbf{g} ao executar o processo recursivo da estrutura.
 À variável X constante, e aos operadores, vamos sempre preservar a identidade num processo recursivo,
 pois são sempre os mesmos qualquer que seja a transformação a aplicar, e não devem ser afetados.
 Às expressões (|ExpAr|) associadas a cada operador, vamos aplicar a mesma função (diferente da função |g| porque aqui estamos a trabalhar com expressões)
  para as transformar, e essa será a função \textbf{f}.
 Deste modo obtemos um novo functor base em função de \textbf{g} e \textbf{f}.
 O functor |recExpAr|, por sua vez, aplica uma única função às expressões associadas aos operadores binários ou
-unários, e por isso, pode assumir a definição do functor base mas preservando os números (N a).
+unários, e por isso, pode assumir a definição do functor base mas preservando os números (\textit{N a}).
+
+\begin{eqnarray*}
+\start
+  baseExpAr'\ g\ f\ =\ baseExpAr\ id\ g\ id\ f\ f\ id\ f
+%
+\just\equiv{De acordo com o raciocínio explicado anteriormente}
+%
+  recExpr\ f = baseExpAr'\ id\ f 
+%
+\end{eqnarray*}
+
+\paragraph{}Representando graficamente:
+
+\xymatrixcolsep{5pc}\xymatrixrowsep{3pc}
+\centerline
+{\xymatrix{
+    1 + (a + (BinOp \times (ExpAr\ a \times ExpAr\ a) + (UnOp \times ExpAr\ a)))
+    \ar[d]_{|id + (id + (id >< (f >< f) + (id >< f)))|} \\
+    1 + (a + (BinOp \times (A \times A) + (UnOp \times A)))
+  }
+}
+
+\paragraph{}Este functor permite-nos transformar a estrutura das expressões recursivamente, e pode ser utilizado em qualquer catamorfismo deste tipo.
+Assumimos que a função \textbf{f} recebe o tipo |ExpAr| e tem como saída um tipo abstrato |A|.
 
 \begin{code}
 baseExpAr' g f = baseExpAr id g id f f id f
 
 ---
 recExpAr f = baseExpAr' id f
----
+\end{code}
+
+\subsubsection*{g\_eval\_exp}
+
+\paragraph{}A função |eval_exp|, que calcula o valor de uma expressão, dado um valor para substituir na variável X, é nos dada como um catamorfismo. Com isto,
+resta-nos descobrir o seu gene. Começamos por representar o problema num diagrama que representa este catamorfismo, com o intuito de deduzir a definição do gene para obter o resultado pretendido.
+
+\vspace{0.5cm}
+
+\xymatrixcolsep{2pc}\xymatrixrowsep{6pc}
+\centerline{\xymatrix{
+   ExpAr\ a\ar[d]_-{|cataNat (g_eval_exp)|}
+                \ar@@/^2pc/ [rr]^-{|outExpAr|} & \qquad \cong
+&   1 + (a + ((BinOp \times (ExpAr\ a \times ExpAr\ a)) + (UnOp \times ExpAr\ a)))  \ar[d]^{|recExpAr(cataNat (g_eval_exp))|}
+                \ar@@/^2pc/ [ll]^-{|inExpAr|} & \qquad \cong
+\\
+    |a| &  & 1 + (a + ((BinOp \times (a \times a)) + (UnOp \times a)))\ar[ll]^-{|g_eval_exp|}
+}}
+
+\vspace{0.5cm}
+
+\paragraph{}Depois de construir o diagrama, conseguimos perceber que o conteúdo do gene seria baseado em \emph{eithers},
+porque o tipo de entrada do gene contém várias somas, e o tipo de saída é apenas um \textbf{a}.
+Deste modo para transformar todas aquelas somas num único \textbf{a}, recorremos a duas funções auxiliares que nos simplificaram a transformação dos operadores no tipo de saída.
+Estas funções basicamente calculam o valor da expressão. 
+Nos casos em que o tipo de entrada só contém um \textbf{a} ou então é do tipo 1, são aplicadas as funções id e \underline{a}, respetivamente.
+
+\begin{code}
 unAction (Negate, a) = negate a 
 unAction (E, a) = expd a
 
@@ -1096,9 +1144,50 @@ binAction (Sum, (a,b)) = a + b
 binAction (Product, (a,b)) = a * b
 
 g_eval_exp a = either (const a) (either id (either binAction unAction)) 
+\end{code}
 
----
-clean X = i1 () 
+\subsubsection*{clean e gopt}
+\paragraph{}Nesta questão é nos fornecida uma função para otimizar as expressões, e para tal é utilizado um hilomorfismo |hyloExpAr|, que utiliza duas funções chamadas |gopt| e |clean|.
+Segundo a definição deste hilomorfismo, podemos representá-lo como uma composição de um catamorfismo, cujo gene é |gopt| com um anamorfismo, cujo gene é |clean|.
+
+\begin{eqnarray*}
+\start
+optmize\_eval\ a = hyloExpAr\ (\ gopt\ a\ )\ clean
+%
+\just\equiv{Definição\ de\ hyloExpAr}
+%
+optmize\_eval\ a = cataExpAr(gopt\ a)\ .\ anaExpAr(clean)
+\end{eqnarray*}
+
+\paragraph{}Representando graficamente o hilomorfismo em função do catamorfismo e do anamorfismo, construímos o seguinte diagrama:
+
+
+\xymatrixcolsep{0.5pc}\xymatrixrowsep{3pc}
+\centerline{\xymatrix{
+  ExpAr\ a
+    			\ar[d]_-{|anaExpAr (clean)|}
+                \ar@@/^2pc/ [rr]^{|clean|} &
+&   () + (a + ((BinOp \times (ExpAr\ a \times ExpAr\ a)) + (UnOp \times ExpAr\ a)))
+				\ar[d]^{|recExpAr(anaExpAr(clean))|}\\
+	ExpAr\ a
+   				\ar[d]_-{|cataNat (gopt a)|}
+                \ar@@/^2pc/ [rr]^-{|outExpAr|} & \qquad \cong
+&   () + (a + ((BinOp \times (ExpAr\ a \times ExpAr\ a)) + (UnOp \times ExpAr\ a)))  			\ar[d]^{|recExpAr(cataNat (gopt a))|}
+                \ar@@/^2pc/ [ll]^-{|inExpAr|}
+\\
+    |a| &  & () + (a + ((BinOp \times (a \times a)) + (UnOp \times a)))
+    			\ar@@/^2pc/ [ll]^-{|gopt|}
+}}
+
+\paragraph{}Como se pode ver no diagrama, a função clean não altera os tipos da estrutura, porque apenas simplifica as expressões.
+Foi por esta razão que nos baseamos no |outExpAr|, e sabíamos que era preciso injetar valores em sítios diferentes consoante o tipo de entrada.
+Essa injeção difere da do |outExpAr| porque é necessário fazer as simplificações às expressões.
+Só em casos específicos é que precisamos de implementar essa diferença: quando recebemos um número ou um operador
+binário. Os casos que abordamos foram os elementos neutros da adição e multiplicação, e também 
+o elemento absorvente da multiplicação. A partir deste raciocínio implementamos a função
+|clean| da seguinte forma:
+
+\begin{code}
 clean (N a) = i2 (i1 a)
 clean (Bin Sum (N 0) a) = clean a
 clean (Bin Sum a (N 0)) = clean a
@@ -1107,8 +1196,11 @@ clean (Bin Product a (N 1)) = clean a
 clean (Bin Product (N 0) a) = clean (N 0)
 clean (Bin Product a (N 0)) = clean (N 0)
 clean resto = outExpAr resto
+\end{code}
 
---- 
+\paragraph{}Por outro lado, a função gopt recebe uma expressão e calcula o seu valor, ou seja, transforma uma |ExpAr| num |A|. No cálculo realizamos manualmente as operações que envolviam elementos neutros e recorremos à função |binAction|, definida anteriormente, para o caso geral.
+
+\begin{code}
 gopt a = either (const a) (either id (either binAction' unAction)) where
   binAction' (Sum, (0,b)) = b 
   binAction' (Sum, (a,0)) = a 
@@ -1118,10 +1210,17 @@ gopt a = either (const a) (either id (either binAction' unAction)) where
 
 \end{code}
 
+\subsubsection*{sd-gen e ad-gen}
+\paragraph{} Finalmente, resta completar as duas funções principais deste problema, |sd| que tem a função de calcular a derivada de uma expressão através de sucessivais transformações (recursividade), e |ad| que, simplesmente procura calcular o valor da derivada de uma expressão no ponto, reduzindo uma expressão a um valor singular.
+Dados os catamorfimos destas duas funções, é necessário deduzir os genes respetivos e, ambos, vão produzir um par, sendo que o \emph{sd-gen} tem como resultado (ExpAr a, ExpAr a), onde o primeiro elemento consiste na expressão a derivar e o segundo a derivada desta. Já o \emph{ad-gen} produz um par (a, a), no qual o primeiro elemento é a solução da função no ponto e o segundo é a derivada no mesmo.
+
+\vspace{0.5cm}
+
 \begin{code}
 
 sd_gen :: Floating a =>
-    Either () (Either a (Either (BinOp, ((ExpAr a, ExpAr a), (ExpAr a, ExpAr a))) (UnOp, (ExpAr a, ExpAr a)))) -> (ExpAr a, ExpAr a)
+    Either () (Either a (Either (BinOp, ((ExpAr a, ExpAr a), (ExpAr a, ExpAr a))) (UnOp, (ExpAr a, ExpAr a)))) ->
+     (ExpAr a, ExpAr a)
 
 sd_gen = either derivX (either derivA (either derivBin derivUn)) where
   derivX () = (X, N 1)
@@ -1145,21 +1244,53 @@ ad_gen v = either (auxX v) (either auxN (either auxBin auxUn)) where
 \end{code}
 
 \subsection*{Problema 2}
-Definir
+\paragraph{}Para resolver esta questão, e baseando-nos no exemplo dado no enunciado, temos de começar por encontrar funções mutuamente recursivas, tal como na função exponencial.
+Para tal desdobramos a equação, até encontrarmos três destas funções, tal como se segue:
+
+\begin{eqnarray}
+  C_n = \frac{(2n)!}{(n+1)! (n!) }
+  \label{eq:cat}
+\end{eqnarray}
+
+\begin{spec}
+c 0 = 1
+c (n+1) = frac ((2(n+1))!) (((n+1)+1)! (n+1)!) = frac ((2n+2)!) ((n+2)! (n+1)!) =
+
+= frac ((2n+2)(2n+1)(2n)!) ((n+2)(n+1)(n)! (n+1)!) = frac (2(n+1)(2n+1)(2n)!) ((n+2)(n+1)(n!) (n+1)!) =
+
+= frac (2(2n+1)(2n)!) ((n+2)(n!) (n+1)!) = frac ((2n)!) ((n+1)!(n)!) . frac (4n+2) (n+2) = c n . frac (d n) (e n)
+\end{spec}
+
+\paragraph{}Já tendo a função principal dividida em três que se complementam, resta-nos definir os casos base de cada uma delas, e também o caso do fator (n + 1) para aplicar a recursividade em cada uma delas.
+
+\begin{spec}
+d 0 = 2
+d n = 4n + 2
+d (n + 1) = (4(n + 1) + 2) = 4n + 6 = d n + 4
+
+e 0 = 2
+e n = n + 2
+e (n + 1) = n + 1 + 2 = e n + 1
+\end{spec}
+
+\paragraph{}Por fim, resta-nos passar tudo para código, e já conseguimos completar o |loop|, que consiste em utilizar 3 funções mutuamente recursivas como corpo do ciclo, porque é nesta parte que aplicamos a recursividade.
+O |init| contém todos os casos de partida, quando n é 0.
+O |prj| é o que nos dá aquilo que realmente queremos, que neste caso é a função principal dos números de |Catalan|, e portanto, das três funções devolve-nos o resultado da primeira.
+
 \begin{code}
-catt 0 = 1
-catt (n+1) = div (catt n * up n) (down(n+1))
+c 0 = 1
+c (n + 1) = div (c n * d n) (e(n + 1))
 
-up 0 = 2
-up (n+1) = 2 + 2 + up n
+d 0 = 2
+d (n + 1) = 4 + d n
 
-down 0 = 2
-down (n+1) = 1 + down n
+e 0 = 2
+e (n + 1) = 1 + e n
 
 cat = prj . (for loop inic) where
-  loop (catt,up,down) = (div (catt * up) down,2+2+up,1+down)
+  loop (c,d,e) = (div (c * d) e,4 + d,1 + e)
   inic = (1,2,2)
-  prj (catt,up,down)= catt
+  prj (c,d,e) = c
 \end{code}
 por forma a que
 seja a função pretendida.
@@ -1169,12 +1300,12 @@ Apresentar de seguida a justificação da solução encontrada.
 \subsection*{Problema 3}
 
 \begin{code}
-h1 = const nil
-h2 ((p:ps), f) = cons (singl.(linear1d p (head ps))) (f)
+h1 = undefined
+h2 ((p:ps), f) = undefined
 
 calcLine :: NPoint -> (NPoint -> OverTime NPoint)
 calcLine = cataList h where
-   h = either h1 h2 
+   h = undefined
 
 deCasteljau :: [NPoint] -> OverTime NPoint
 deCasteljau = hyloAlgForm alg coalg where
@@ -1186,10 +1317,17 @@ hyloAlgForm = undefined
 
 \subsection*{Problema 4}
 
-Solução para listas não vazias:
+\paragraph{}
+
+
 \begin{code}
 avg = p1.avg_aux
 \end{code}
+
+\subsubsection*{Listas não vazias}
+
+\paragraph{}De forma a poder trabalhar sobre listas não vazias (que são utilizadas nesta questão) tivemos que definir uma função |outList'| e um catamorfismo |cataList'| específicos, para usarmos na construção da solução deste problema.
+O |out| será o destrutor deste tipo, e deste modo podemos injetar à esquerda um único elemento ou então à direita a cabeça da lista, concatenada com a sua cauda.
 
 \begin{code}
 
@@ -1197,6 +1335,42 @@ outList' [h] = i1 h
 outList' (h:t) = i2 (h,t)
 
 cataList' g = g . recList(cataList' g) . outList'
+
+\end{code}
+
+\subsubsection*{avg\_aux}
+
+\paragraph{}Para descobrir a definição desta função, já temos o novo catamorfismo definido e só falta descobrir o gene a aplicar para obter o resultado pretendido.
+Sabemos do enunciado que a função |avg| está em recursividade mútua com |length|, ou seja, estamos a reduzir a informação da estrutura para obter a média, e ao mesmo tempo, o tamanho da lista.
+Também nos é dito que o gene é um \emph{either}, e por isso, só nos resta definir as funções que o constituem.
+Primeiro é necessário definir um diagrama para auxiliar o raciocínio:
+
+\vspace{0.5cm}
+
+\centerline{
+\xymatrixcolsep{2pc}\xymatrixrowsep{3pc}
+{\xymatrix{
+    A^{+}
+          \ar[d]_-{|cataNat(either b q)|}
+                \ar[rr]^-{|outList'|} &
+&   A + (A \times A^{+})
+        \ar[d]^{|recList(cataNat (either b q))|}\\
+    A \times N_0 &  & A + A \times (A \times N_0)
+          \ar[ll]^-{[b,q]}
+}}
+}
+
+\vspace{0.5cm}
+
+\paragraph{}Partindo deste catamorfismo, surge com mais facilidade o comportamento da função |avg_aux|.
+Para descobrir o seu gene, assumimos que já temos a média e o tamanho da cauda da lista, e só precisamos de aplicar a transformação final ao elemento que está à cabeça.
+Tanto o componente |b| como o |q| do \emph{either} serão um split, visto que a partir do tipo do habitante da lista, que neste caso é um |A|, vamos gerar um par.
+O |b| é aplicado ao elemento singular da lista, e por isso colocamos à esquerda do par o próprio valor, e à direita o número 1.
+O |q| é mais complexo porque temos de lidar com o elemento que está à cabeça da lista e o par que já vem calculado previamente.
+Como à esquerda fica a média, utilizamos à esquerda a função |avgCalc| para a calcular, e à direita a função |succAux|, que simplesmenta adiciona um ao valor que vem calculado anteriormente.
+Com isto, definimos as funções desta forma:
+
+\begin{code}
 
 succAux = succ . p2 . p2
 avgCalc (a,(avg,len)) = (a + (avg * len)) / (len + 1) 
@@ -1206,12 +1380,42 @@ avg_aux = cataList' (either b q) where
   q = split avgCalc succAux
 
 \end{code} 
+
+\subsubsection*{avgLTree}
+
 Solução para árvores de tipo \LTree:
+\paragraph{}Nesta questão, começamos novamente pela elaboração do diagrama, e como já tinhamos percebido bem o problema com a questão anterior, bastou agora adaptar ao novo tipo de dados |LTree|.
+
+
+\vspace{0.5cm}
+
+\centerline{
+\xymatrixcolsep{2pc}\xymatrixrowsep{3pc}
+{\xymatrix{
+    LTree\ A
+          \ar[d]_-{|cataNat(either b q)|}
+                \ar[rr]^-{|outLTree|} &
+&   A + (LTree\ A \times LTree\ A)
+        \ar[d]^{|recLTree(cataLTree ([b,q]))|}\\
+    A \times N_0 &  & A + ((A \times N_0) \times (A \times N_0))
+          \ar[ll]^-{[b,q]}
+}}
+}
+
+\vspace{0.5cm}
+
+\paragraph{}Com isto torna-se simples a aplicação do gene, porque já temos a média e o tamanho das sub-árvores, agora temos de os calcular para a árvore completa.
+No caso do elemento singular, podemos projetar a definição anterior para aqui, com o |split id (const 1)|.
+Para descobrir o |q|, temos de adaptar os cálculos ao novo tipo de dados, e funciona da seguinte maneira:
+para a média multiplicamos a média de cada sub-árvore pelo seu tamanho, depois somamos ambos os resultados e dividimos pelo tamanho conjunto das sub-árvores, ou seja, a soma do comprimento de cada uma; para o comprimento, basta somar os valores das duas sub-árvores e obtemos o comprimento total.
+
+\paragraph{}Como tanto nesta questão como na anterior só nos interessa conhecer a média, aplicamos |p1| depois de executar o catamorfismo, em ambos os casos, para nos devolver o elemento que se encontra à esquerda no par (a média).
+
 \begin{code}
-avgLTree = p1.cataLTree gene where
-   gene = (either (split (id) (const 1)) (split (auxFuncLTree) (sumSizes)))
-   auxFuncLTree ((a1,n1),(a2,n2)) = (((a1*n1) + (a2*n2)) / (n1+n2))
-   sumSizes ((a1,n1),(a2,n2)) = n1 + n2
+avgLTree = p1.cataLTree g where
+   g = either (split id (const 1)) (split auxAvgLTree auxLenLTree)
+   auxAvgLTree ((a1,l1),(a2,l2)) = (((a1*l1) + (a2*l2)) / (l1+l2))
+   auxLenLTree ((_,l1),(_,l2)) = l1 + l2
 \end{code}
 
 \subsection*{Problema 5}
@@ -1221,8 +1425,8 @@ Inserir em baixo o código \Fsharp\ desenvolvido, entre \verb!\begin{verbatim}! 
 module BTree
 
 open Cp
-//import Data.List
-//import Data.Monoid
+open List 
+open Seq
 
 // (1) Datatype definition -----------------------------------------------------
 
