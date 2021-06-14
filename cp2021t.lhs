@@ -1015,6 +1015,55 @@ sd = p2 . cataExpAr sd_gen
 ad :: Floating a => a -> ExpAr a -> a
 ad v = p2 . cataExpAr (ad_gen v)
 \end{code}
+
+\paragraph{}Tendo como base as funções definidas em cima, conhecendo o comportamento das expressões,
+e também a função \emph{inExpAr} e o functor base \emph{baseExpAr},
+começamos por definir as funções que faltam para completar o catamorfismo e o anamorfismo essenciais
+para transformar este tipo de dados.
+
+\subsubsection*{outExpAr} %-------------------------
+\paragraph{}Inicialmente definimos o \emph{outExpAr}, com o auxílio da definição do \emph{inExpAr}, já que
+os dois formam um isomorfismo. A partir disto aplicamos algumas leis de forma 
+a chegar à função referente ao \emph{outExpAr}.
+
+\begin{eqnarray*}
+\start
+  outExpAr\ \cdot\ inExpAr\ =\ id
+%
+\just\equiv{inExpAr}
+  outExpAr\ \cdot\ [\underline{X},num\_ops]\ =\ id
+%
+\just\equiv{Fusão-+\ (20)}
+%
+  [outExpAr\ \cdot\ \underline{X},\ outExpAr\ \cdot\ num\_ops]\ =\ id
+%
+\just\equiv{Universal-+\ (17) e Natural-id\ (1)\ (aplicada duas vezes)}
+%
+  |lcbr(
+    outExpAr . const X = i1 
+  )(
+    outExpAr . num_ops = i2 
+  )|
+%
+\just\equiv{Substituição de num\_ops, Igualdade extensional (71) e Def-comp (72)}
+%
+  |lcbr(
+  outExpAr X = i1 ()
+  )(
+  outExpAr (N a) = i2 (i1 a)
+  )|
+    \\ & &
+  |lcbr(
+  outExpAr (Bin op a b)  = i2 (i2 (i1 (op,(a,b))))
+  )(
+  outExpAr (Un op a) = i2 (i2 (i2 (op,a)))
+  )|
+\end{eqnarray*}
+
+\paragraph{}Além de termos utilizado estas leis em cima para deduzir a definição do \emph{outExpAr}, também nos baseamos no tipo do \emph{out}
+enquanto deduzíamos as leis, tornou-se mais intuitivo chegar à definição final, porque através dos tipos soubemos onde injetar cada parte da expressão, e 
+basicamente só tivemos de injetar no sítio correto do tipo, cada representação da expressão.
+
 Definir:
 
 \begin{code}
@@ -1227,10 +1276,74 @@ let postordt x =
 
 // (4.4) Quicksort
 
-(*let rec part p x = 
-    match x with
-    | [] -> ([],[])
-    | (h::t) -> h *)
+let rec part x y = 
+    match x y with
+    | p [] -> ([],[])
+    | p (h::t) -> if p h then let (s,l) = part p t in (h::s,l) else let (s,l) = part p t in (s,h::l)
+
+let qsep x =
+    match x with 
+    | [] -> Left ()
+    | (h::t) ->
+        let (s,l) = part (<h) t
+        in Right (h,(s,l))
+
+let qSort x = hyloBTree inord qsep x 
+
+// (4.5) Traces
+
+let union left right =
+    List.append left right |> Seq.distinct |> List.ofSeq
+
+let tunion (a,(l,r)) = union (List.map (a::) l) (List.map (a::) r)
+
+let traces x = cataBTree (either (konst [[]]) tunion) x
+
+// (4.6)
+
+let present x = inord x 
+
+let strategy (d,x) =
+    match (d,x) with
+    | (d,0) = Left ()
+    | (d,x+1) = Right ((x,d),((not d,x),(not d,x)))
+
+let hanoi x = hyloBTree present strategy x
+
+// (5) Depth and balancing (using mutual recursion)
+
+let baldepth x =
+    let g = either (konst(True,1)) (h << (id><f))
+    h(a,((b1,b2),(d1,d2))) = (b1 && b2 && abs(d1-d2)<=1,1+max d1 d2)
+    f((b1,d1),(b2,d2)) = ((b1,b2),(d1,d2))
+    in cataBTree g x 
+
+let balBTree x = p1 << baldepth x
+
+let depthBTree x = p2 << baldepth x 
+
+// (6) Going polytipic
+
+let tnat f x =
+    let theta = uncurry mappend
+    in either (konst mempty) (theta << (f >< theta)) x 
+
+let monBTree f x = cataBTree (tnat f) x 
+
+let preordt' x = monBTree singl x
+
+let countBTree' x = monBTree (konst (Sum 1)) x 
+
+// (7) Zipper
+
+type Deriv<'a> = Dr bool of 'a (BTree of 'a) 
+type Zipper<'a> = List<Deriv<'a>> 
+
+let rec plug x y =
+    match x y with
+    | [] t = t 
+    | ((Dr false a l)::z) t = Node (a,(plug z t,l))
+    | ((Dr true a r)::z) t = Node (a,(r,plug z t))
 
 \end{verbatim}
 
