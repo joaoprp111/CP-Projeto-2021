@@ -1095,14 +1095,14 @@ unários, e por isso, pode assumir a definição do functor base mas preservando
 \xymatrixcolsep{5pc}\xymatrixrowsep{3pc}
 \centerline
 {\xymatrix{
-    1 + (a + (BinOp \times (ExpAr\ a \times ExpAr\ a) + (UnOp \times ExpAr\ a)))
+    1 + (A + (BinOp \times (ExpAr\ A \times ExpAr\ A) + (UnOp \times ExpAr\ A)))
     \ar[d]_{|id + (id + (id >< (f >< f) + (id >< f)))|} \\
-    1 + (a + (BinOp \times (A \times A) + (UnOp \times A)))
+    1 + (A + (BinOp \times (B \times B) + (UnOp \times B)))
   }
 }
 
 \paragraph{}Este functor permite-nos transformar a estrutura das expressões recursivamente, e pode ser utilizado em qualquer catamorfismo deste tipo.
-Assumimos que a função \textbf{f} recebe o tipo |ExpAr| e tem como saída um tipo abstrato |A|.
+Assumimos que a função \textbf{f} recebe o tipo |ExpAr| e tem como saída um tipo abstrato |B|.
 
 \begin{code}
 baseExpAr' g f = baseExpAr id g id f f id f
@@ -1120,12 +1120,12 @@ resta-nos descobrir o seu gene. Começamos por representar o problema num diagra
 
 \xymatrixcolsep{2pc}\xymatrixrowsep{6pc}
 \centerline{\xymatrix{
-   ExpAr\ a\ar[d]_-{|cataNat (g_eval_exp)|}
+   ExpAr\ A\ar[d]_-{|cataNat (g_eval_exp)|}
                 \ar@@/^2pc/ [rr]^-{|outExpAr|} & \qquad \cong
-&   1 + (a + ((BinOp \times (ExpAr\ a \times ExpAr\ a)) + (UnOp \times ExpAr\ a)))  \ar[d]^{|recExpAr(cataNat (g_eval_exp))|}
-                \ar@@/^2pc/ [ll]^-{|inExpAr|} & \qquad \cong
+&   1 + (A + ((BinOp \times (ExpAr\ A \times ExpAr\ A)) + (UnOp \times ExpAr\ A)))  \ar[d]^{|recExpAr(cataNat (g_eval_exp))|}
+                \ar@@/^2pc/ [ll]^-{|inExpAr|}
 \\
-    |a| &  & 1 + (a + ((BinOp \times (a \times a)) + (UnOp \times a)))\ar[ll]^-{|g_eval_exp|}
+    |A| &  & 1 + (A + ((BinOp \times (A \times A)) + (UnOp \times A)))\ar[ll]^-{|g_eval_exp|}
 }}
 
 \vspace{0.5cm}
@@ -1134,7 +1134,7 @@ resta-nos descobrir o seu gene. Começamos por representar o problema num diagra
 porque o tipo de entrada do gene contém várias somas, e o tipo de saída é apenas um \textbf{a}.
 Deste modo para transformar todas aquelas somas num único \textbf{a}, recorremos a duas funções auxiliares que nos simplificaram a transformação dos operadores no tipo de saída.
 Estas funções basicamente calculam o valor da expressão. 
-Nos casos em que o tipo de entrada só contém um \textbf{a} ou então é do tipo 1, são aplicadas as funções id e \underline{a}, respetivamente.
+Nos casos em que o tipo de entrada só contém um \textbf{a} ou então é do tipo 1, são aplicadas as funções id e \underline{a}, respetivamente. (Nota : a pertence ao tipo A).
 
 \begin{code}
 unAction (Negate, a) = negate a 
@@ -1164,18 +1164,18 @@ optmize\_eval\ a = cataExpAr(gopt\ a)\ .\ anaExpAr(clean)
 
 \xymatrixcolsep{0.5pc}\xymatrixrowsep{3pc}
 \centerline{\xymatrix{
-  ExpAr\ a
+  ExpAr\ A 
     			\ar[d]_-{|anaExpAr (clean)|}
                 \ar@@/^2pc/ [rr]^{|clean|} &
-&   () + (a + ((BinOp \times (ExpAr\ a \times ExpAr\ a)) + (UnOp \times ExpAr\ a)))
+&   1 + (A + ((BinOp \times (ExpAr\ A \times ExpAr\ A)) + (UnOp \times ExpAr\ A)))
 				\ar[d]^{|recExpAr(anaExpAr(clean))|}\\
-	ExpAr\ a
-   				\ar[d]_-{|cataNat (gopt a)|}
+	ExpAr\ A
+   				\ar[d]_-{|cataNat (gopt)|}
                 \ar@@/^2pc/ [rr]^-{|outExpAr|} & \qquad \cong
-&   () + (a + ((BinOp \times (ExpAr\ a \times ExpAr\ a)) + (UnOp \times ExpAr\ a)))  			\ar[d]^{|recExpAr(cataNat (gopt a))|}
+&   1 + (A + ((BinOp \times (ExpAr\ A \times ExpAr\ A)) + (UnOp \times ExpAr\ A)))  			\ar[d]^{|recExpAr(cataNat (gopt))|}
                 \ar@@/^2pc/ [ll]^-{|inExpAr|}
 \\
-    |a| &  & () + (a + ((BinOp \times (a \times a)) + (UnOp \times a)))
+    |A| &  & 1 + (A + ((BinOp \times (A \times A)) + (UnOp \times A)))
     			\ar@@/^2pc/ [ll]^-{|gopt|}
 }}
 
@@ -1198,7 +1198,7 @@ clean (Bin Product a (N 0)) = clean (N 0)
 clean resto = outExpAr resto
 \end{code}
 
-\paragraph{}Por outro lado, a função gopt recebe uma expressão e calcula o seu valor, ou seja, transforma uma |ExpAr| num |A|. No cálculo realizamos manualmente as operações que envolviam elementos neutros e recorremos à função |binAction|, definida anteriormente, para o caso geral.
+\paragraph{}Por outro lado, a função gopt recebe uma expressão e calcula o seu valor, ou seja, transforma uma |ExpAr A| num |A|. No cálculo realizamos manualmente as operações que envolviam elementos neutros e recorremos à função |binAction|, definida anteriormente, para o caso geral.
 
 \begin{code}
 gopt a = either (const a) (either id (either binAction' unAction)) where
@@ -1212,7 +1212,8 @@ gopt a = either (const a) (either id (either binAction' unAction)) where
 
 \subsubsection*{sd-gen e ad-gen}
 \paragraph{} Finalmente, resta completar as duas funções principais deste problema, |sd| que tem a função de calcular a derivada de uma expressão através de sucessivais transformações (recursividade), e |ad| que, simplesmente procura calcular o valor da derivada de uma expressão no ponto, reduzindo uma expressão a um valor singular.
-Dados os catamorfimos destas duas funções, é necessário deduzir os genes respetivos e, ambos, vão produzir um par, sendo que o \emph{sd-gen} tem como resultado (ExpAr a, ExpAr a), onde o primeiro elemento consiste na expressão a derivar e o segundo a derivada desta. Já o \emph{ad-gen} produz um par (a, a), no qual o primeiro elemento é a solução da função no ponto e o segundo é a derivada no mesmo.
+Dados os catamorfimos destas duas funções, é necessário deduzir os genes respetivos e, ambos, vão produzir um par, sendo que o \emph{sd-gen} tem como resultado (ExpAr A, ExpAr A), onde o primeiro elemento consiste na expressão a derivar e o segundo a derivada desta. Já o \emph{ad-gen} produz um par (A, A), no qual o primeiro elemento é a solução da função no ponto e o segundo é a derivada no mesmo.
+Utilizamos funções auxiliares responsáveis por derivar cada parte do tipo, tanto em |sd| como em |ad|. Em baixo seguem-se as definições resultantes:
 
 \vspace{0.5cm}
 
@@ -1256,9 +1257,9 @@ Para tal desdobramos a equação, até encontrarmos três destas funções, tal 
 c 0 = 1
 c (n+1) = frac ((2(n+1))!) (((n+1)+1)! (n+1)!) = frac ((2n+2)!) ((n+2)! (n+1)!) =
 
-= frac ((2n+2)(2n+1)(2n)!) ((n+2)(n+1)(n)! (n+1)!) = frac (2(n+1)(2n+1)(2n)!) ((n+2)(n+1)(n!) (n+1)!) =
+= frac ((2n+2)(2n+1)(2n)!) ((n+2)(n+1)(n)! (n+1)!) = frac (2(n+1)(2n+1)(2n)!) ((n+2)(n+1)(n)! (n+1)!) =
 
-= frac (2(2n+1)(2n)!) ((n+2)(n!) (n+1)!) = frac ((2n)!) ((n+1)!(n)!) . frac (4n+2) (n+2) = c n . frac (d n) (e n)
+= frac (2(2n+1)(2n)!) ((n+2)(n)! (n+1)!) = frac ((2n)!) ((n+1)!(n)!) . frac (4n+2) (n+2) = c n . frac (d n) (e n)
 \end{spec}
 
 \paragraph{}Já tendo a função principal dividida em três que se complementam, resta-nos definir os casos base de cada uma delas, e também o caso do fator (n + 1) para aplicar a recursividade em cada uma delas.
@@ -1299,14 +1300,47 @@ Apresentar de seguida a justificação da solução encontrada.
 
 \subsection*{Problema 3}
 
+\subsubsection*{calcLine}
+
+\paragraph{}Para definirmos a função |calcLine| como um catamorfismo, podemos primeiro representar o diagrama do seu comportamento:
+
+\vspace{0.5cm}
+
+\xymatrixcolsep{2pc}\xymatrixrowsep{6pc}
+\centerline{\xymatrix{
+   |NPoint|\ar[d]_-{|calcLine|}
+                \ar@@/^2pc/ [rr]^-{|outList|} & \qquad \cong
+&   1 + (|Rational| \times |NPoint|)  \ar[d]^{|recList (cataNat (h))|}
+                \ar@@/^2pc/ [ll]^-{|inList|} & \qquad \cong
+\\
+    (|OverTime NPoint|)^|NPoint| &  & 1 + (|Rational| \times ((|OverTime NPoint|)^|NPoint|))\ar[ll]^-{|h|}
+}}
+
+\vspace{0.5cm}
+
+\paragraph{}Com este diagrama e com a função já definida no anexo C, compreende-se que, para passar aquela definição para um catamorfismo, temos de construir o gene que nos permita passar do tipo
+1 + Q x |(OverTime NPoint)^NPoint| para |(OverTime NPoint)^NPoint|.
+\paragraph{}Como no lado esquerdo recebemos um tipo com um único habitante, que é a lista vazia, retornamos |nil|.
+No lado direito, por sua vez, recebemos um par, com o racional que estava à cabeça da lista original, e com a aplicação do catamorfismo já feita para a cauda.
+Assim, tomando como base a definição já dada, podemos definir o |h2| (lado direito) com a definição idêntica à dada.
+
 \begin{code}
-h1 = undefined
-h2 ((p:ps), f) = undefined
 
 calcLine :: NPoint -> (NPoint -> OverTime NPoint)
 calcLine = cataList h where
-   h = undefined
+   h = either h1 h2
+   h1 _ _ = nil
+   h2 (d,f) l = case l of
+      [] -> nil
+      (x:xs) -> \z -> concat $ (sequenceA [singl . linear1d d x, f xs]) z
 
+\end{code}
+
+\subsubsection*{deCasteljau}
+
+\paragraph{}Nesta questão pensamos em transformar o hilomorfismo num catamorfismo seguido de um anamorfismo, no entanto não conseguimos deduzir as definições necessárias para resolver este problema nem efetivamente construir o diagrama, porque não percebemos muito bem o comportamento da função |deCasteljau|.
+
+\begin{code}
 deCasteljau :: [NPoint] -> OverTime NPoint
 deCasteljau = hyloAlgForm alg coalg where
    coalg = undefined
